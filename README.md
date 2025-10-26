@@ -11,15 +11,18 @@ Complete full-stack application with independent backend and frontend services.
 │   ├── README.md     # Complete backend documentation
 │   ├── Dockerfile
 │   ├── docker-compose.yml
+│   ├── env.example
 │   ├── run.bat       # Windows run script
 │   └── run.sh        # Linux/Mac run script
 │
 └── frontend/         # Voice Agent Analytics Dashboard (React/TypeScript)
     ├── src/          # React components
+    ├── build/        # Production build
     ├── package.json
     ├── README.md     # Complete frontend documentation
     ├── Dockerfile
     ├── nginx.conf
+    ├── env.example
     ├── run.bat       # Windows run script
     └── run.sh        # Linux/Mac run script
 ```
@@ -40,6 +43,7 @@ This repository contains **two independent projects**:
 - **Technology**: React, TypeScript, Material-UI, Recharts
 - **Purpose**: Interactive analytics dashboard for call analytics
 - **Port**: 3000
+- **Live URL**: https://cah-app.netlify.app/
 - **Documentation**: See [frontend/README.md](frontend/README.md)
 
 ## 🚀 Quick Start
@@ -83,9 +87,16 @@ Access at: http://localhost:3000
 - ✅ Custom data editing
 - ✅ Modern dark theme UI
 
+## 🌐 Deployment
+
+- **Frontend**: Deployed at https://cah-app.netlify.app/
+- **Backend**: Can be deployed on any cloud platform (AWS, GCP, Azure, Railway, etc.)
+- Both services have Docker support for containerized deployment
+
 ## 📝 Notes
 
 - **Backend and frontend are completely independent**
 - Each has its own documentation and setup instructions
 - Run them separately or together as needed
 - Both have Docker support for easy deployment
+- Frontend is production-ready and deployed

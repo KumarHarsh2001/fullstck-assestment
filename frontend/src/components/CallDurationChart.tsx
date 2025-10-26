@@ -39,7 +39,6 @@ const CallDurationChart: React.FC<CallDurationChartProps> = ({
 }) => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editedData, setEditedData] = useState(data);
-  const [peakDuration, setPeakDuration] = useState(12);
   const [peakDurationInput, setPeakDurationInput] = useState('12');
 
   // Reset editedData when data prop changes
