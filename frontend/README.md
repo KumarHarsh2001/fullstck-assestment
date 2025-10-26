@@ -200,9 +200,12 @@ docker run -p 3000:3000 voice-analytics-frontend
 ```
 
 ### Cloud Deployment
+The app is deployed and live at:
+- **Live Application**: https://cah-app.netlify.app/
+
 The app is ready for deployment on:
+- **Netlify** - Static site hosting (✅ Currently deployed)
 - **Vercel** - Zero-config deployment
-- **Netlify** - Static site hosting
 - **AWS S3 + CloudFront** - Scalable static hosting
 - **Google Cloud Storage** - Global CDN
 
