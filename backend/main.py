@@ -8,8 +8,7 @@ from datetime import datetime, timezone
 import asyncio
 import os
 from typing import Optional
-import redis
-import json
+from threading import Lock
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/transaction_db")
@@ -17,8 +16,10 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Redis setup for idempotency
-redis_client = redis.Redis(host=os.getenv("REDIS_HOST", "localhost"), port=6379, db=0)
+# In-memory idempotency (for Render deployment without Redis)
+processed_transactions = set()
+processing_transactions = set()
+idempotency_lock = Lock()
 
 # Database Models
 class Transaction(Base):
@@ -70,13 +71,14 @@ def get_db():
 
 async def process_transaction(transaction_data: TransactionWebhook):
     """Background task to process transaction with 30-second delay"""
-    # Check if already processed (idempotency)
-    if redis_client.exists(f"processed:{transaction_data.transaction_id}"):
-        print(f"Transaction {transaction_data.transaction_id} already processed, skipping")
-        return
-    
-    # Mark as being processed
-    redis_client.setex(f"processing:{transaction_data.transaction_id}", 60, "true")
+    with idempotency_lock:
+        # Check if already processed (idempotency)
+        if transaction_data.transaction_id in processed_transactions:
+            print(f"Transaction {transaction_data.transaction_id} already processed, skipping")
+            return
+        
+        # Mark as being processed
+        processing_transactions.add(transaction_data.transaction_id)
     
     try:
         # Simulate 30-second processing delay
@@ -94,9 +96,10 @@ async def process_transaction(transaction_data: TransactionWebhook):
                 transaction.processed_at = datetime.utcnow()
                 db.commit()
                 
-                # Mark as processed in Redis
-                redis_client.setex(f"processed:{transaction_data.transaction_id}", 3600, "true")
-                redis_client.delete(f"processing:{transaction_data.transaction_id}")
+                # Mark as processed
+                with idempotency_lock:
+                    processed_transactions.add(transaction_data.transaction_id)
+                    processing_transactions.discard(transaction_data.transaction_id)
                 
                 print(f"Transaction {transaction_data.transaction_id} processed successfully")
             else:
@@ -107,7 +110,8 @@ async def process_transaction(transaction_data: TransactionWebhook):
     except Exception as e:
         print(f"Error processing transaction {transaction_data.transaction_id}: {str(e)}")
         # Remove processing lock on error
-        redis_client.delete(f"processing:{transaction_data.transaction_id}")
+        with idempotency_lock:
+            processing_transactions.discard(transaction_data.transaction_id)
 
 @app.get("/", response_model=HealthResponse)
 async def health_check():
@@ -121,12 +125,13 @@ async def health_check():
 async def receive_webhook(transaction: TransactionWebhook, background_tasks: BackgroundTasks):
     """Webhook endpoint for receiving transactions"""
     try:
-        # Check for duplicate processing
-        if redis_client.exists(f"processed:{transaction.transaction_id}"):
-            return JSONResponse(status_code=202, content={"message": "Transaction already processed"})
-        
-        if redis_client.exists(f"processing:{transaction.transaction_id}"):
-            return JSONResponse(status_code=202, content={"message": "Transaction already being processed"})
+        # Check for duplicate processing (in-memory check)
+        with idempotency_lock:
+            if transaction.transaction_id in processed_transactions:
+                return JSONResponse(status_code=202, content={"message": "Transaction already processed"})
+            
+            if transaction.transaction_id in processing_transactions:
+                return JSONResponse(status_code=202, content={"message": "Transaction already being processed"})
         
         # Store transaction in database
         db = SessionLocal()
@@ -147,6 +152,10 @@ async def receive_webhook(transaction: TransactionWebhook, background_tasks: Bac
                 )
                 db.add(db_transaction)
                 db.commit()
+            
+            # Mark as being processed
+            with idempotency_lock:
+                processing_transactions.add(transaction.transaction_id)
             
             # Add background task for processing
             background_tasks.add_task(process_transaction, transaction)
@@ -187,4 +196,5 @@ async def get_transaction(transaction_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
