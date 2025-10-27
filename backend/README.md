@@ -10,7 +10,7 @@ A robust FastAPI-based service that receives transaction webhooks from external 
 - **Health Monitoring**: Built-in health check endpoint
 - **Transaction Querying**: Retrieve transaction status by ID
 - **Persistent Storage**: PostgreSQL database for reliable data storage
-- **Redis Caching**: Fast idempotency checks and processing locks
+- **In-Memory Idempotency**: Thread-safe duplicate transaction detection
 
 ## API Endpoints
 
@@ -73,14 +73,14 @@ Retrieve the status of a specific transaction.
 - **FastAPI**: Modern, fast web framework for building APIs
 - **SQLAlchemy**: Python SQL toolkit and Object-Relational Mapping
 - **PostgreSQL**: Robust, open-source relational database
-- **Redis**: In-memory data structure store for caching and idempotency
 - **Uvicorn**: ASGI server for running FastAPI applications
+- **In-Memory Tracking**: Thread-safe sets for idempotency
 
 ### Key Design Decisions
 
 1. **FastAPI**: Chosen for its automatic API documentation, type safety, and excellent performance
 2. **Background Tasks**: Uses FastAPI's built-in BackgroundTasks for async processing
-3. **Redis for Idempotency**: Provides fast duplicate detection and processing locks
+3. **In-Memory Idempotency**: Thread-safe in-memory tracking for duplicate detection
 4. **PostgreSQL**: Ensures ACID compliance and data durability
 5. **Docker**: Containerized deployment for consistency and scalability
 
@@ -103,13 +103,12 @@ chmod +x run.sh
 ./run.sh
 ```
 
-This will automatically start all services (app, database, Redis) using Docker Compose.
+This will automatically start all services (app, database) using Docker Compose.
 
 Access points:
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
 - PostgreSQL: localhost:5432
-- Redis: localhost:6379
 
 ### Manual Setup
 
@@ -139,13 +138,12 @@ pip install -r requirements.txt
 2. **Set up environment variables:**
 ```bash
 export DATABASE_URL="postgresql://user:password@localhost/transaction_db"
-export REDIS_HOST="localhost"
 ```
 
-3. **Start PostgreSQL and Redis:**
+3. **Start PostgreSQL (optional for local testing):**
 ```bash
 # Using Docker Compose for dependencies only
-docker-compose up -d db redis
+docker-compose up -d db
 ```
 
 4. **Run the application:**
@@ -197,7 +195,7 @@ curl -X POST http://localhost:8000/v1/webhooks/transactions \
 - **Webhook Response Time**: < 500ms guaranteed
 - **Background Processing**: 30-second delay per transaction
 - **Concurrent Processing**: Handles multiple transactions simultaneously
-- **Idempotency**: Redis-based fast duplicate detection
+- **Idempotency**: In-memory thread-safe duplicate detection
 - **Database**: ACID-compliant PostgreSQL for data integrity
 
 ## Error Handling
@@ -209,11 +207,17 @@ curl -X POST http://localhost:8000/v1/webhooks/transactions \
 
 ## Deployment
 
-The service is designed for cloud deployment with:
-- **Docker**: Containerized for consistent deployment
-- **Environment Variables**: Configurable database and Redis connections
+### 🌐 Live Deployment
+- **Production URL**: https://fullstck-assestment.onrender.com/
+- **API Documentation**: https://fullstck-assestment.onrender.com/docs
+- **Health Check**: https://fullstck-assestment.onrender.com/
+
+The service is deployed on Render with:
+- **PostgreSQL**: Managed database on Render
+- **Environment Variables**: Configurable database connections
 - **Health Checks**: Ready for load balancer health monitoring
 - **Stateless Design**: Horizontally scalable
+- **In-Memory Idempotency**: No external dependencies like Redis
 
 ## Security Considerations
 

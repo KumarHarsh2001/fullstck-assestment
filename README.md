@@ -89,9 +89,10 @@ Access at: http://localhost:3000
 
 ## 🌐 Deployment
 
-- **Frontend**: Deployed at https://cah-app.netlify.app/
-- **Backend**: Can be deployed on any cloud platform (AWS, GCP, Azure, Railway, etc.)
-- Both services have Docker support for containerized deployment
+- **Frontend**: https://cah-app.netlify.app/
+- **Backend**: https://fullstck-assestment.onrender.com/
+- Both services are deployed and live in production
+- Docker support available for local testing
 
 ## 📝 Notes
 
